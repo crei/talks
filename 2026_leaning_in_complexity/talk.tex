@@ -1,0 +1,165 @@
+\documentclass{beamer}
+
+\usetheme{default}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+
+\title{Formalizing Complexity Theory}
+\author{Christian Reitwiessner}
+\institute{leaning in 2026, Berlin}
+\date{2026-03-12}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Complexity Theory}
+  Complexity theory studies the relation between various \emph{resource bounds} for computation:
+
+  \medskip
+  \begin{tabular}{ll}
+    \textbf{Time}        & number of computation steps \\
+    \textbf{Space}       & number of memory cells used \\
+    \textbf{Nondeterminism} & verifying a proposed solution \\
+    \textbf{Randomness} \\
+    \textbf{Quantum} \\
+  \end{tabular}
+
+  \medskip
+
+  Not so much about finding efficient algorithms for given problems,
+  but rather if e.g. randomness or nondeterminism acutally provide an advantage
+  and what the trade-offs between resource bounds are.
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{The P vs.\ NP Question}
+  \begin{itemize}
+    \item[$\mathbb{P}$]   Yes-no-problems solvable in polynomial time.
+    \item[$\mathbb{NP}$]  Problems whose solutions can be \emph{verified} in polynomial time.
+      $L \in \mathbb{NP} \iff \exists W \in \mathbb{P}, (x \in L \iff \exists^{p} y, (x, y) \in W)$
+  \end{itemize}
+
+  \[
+    \mathbb{P} \stackrel{?}{=} \mathbb{NP}
+  \]
+
+  \begin{itemize}
+    \item One of the seven Millennium Prize Problems.
+    \item If $\mathbb{P} = \mathbb{NP}$: cryptography, optimisation, formalizing mathematics would be revolutionised.
+    \item Widely believed: $\mathbb{P} \neq \mathbb{NP}$, but no proof in sight.
+  \end{itemize}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Decades of Stagnation}
+  \begin{itemize}
+    \item $\mathbb{P} \stackrel{?}{=} \mathbb{NP}$ only one example
+    \item Most existing techniques cannot solve the hard problems in complexity (``natural proofs'', ``relativization'', ``algebrization'')
+    \item Solution has to use mathematical insights far removed from actual machines.
+    \item Community largely gave up on a near-term resolution.
+  \end{itemize}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Williams' Result}
+  \textbf{Ryan Williams (2011):} $\mathsf{NEXP} \not\subseteq \mathsf{ACC}^0$
+
+  \medskip
+  \begin{itemize}
+    \item $\mathsf{ACC}^0$: circuits of constant depth with AND/OR/MOD gates --- a weak model.
+    \item First \emph{superpolynomial} circuit lower bound for a class above $\mathsf{NP}$ in 20 years.
+    \item Key idea: a \emph{faster SAT algorithm} for $\mathsf{ACC}^0$ circuits implies the lower bound.\\
+          (Algorithmic Method: algorithms $\Rightarrow$ lower bounds.)
+    \item Breaks the natural-proofs barrier by exploiting non-uniformity carefully.
+  \end{itemize}
+
+  \medskip
+  \textbf{Why exciting:} opens a new proof strategy; perhaps eventually applicable closer to $\mathbb{P}$ vs.\ $\mathbb{NP}$.
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Motivation: Formalizing in Lean}
+  \begin{itemize}
+    \item Learnt about Williams' result and Lean 4 / Mathlib at the same time.
+    \item Idea: formalize the result before someone else does!
+    \item First obstacle: cannot even \emph{state} the theorem.
+      \begin{itemize}
+        \item Mathlib only has single-tape Turing machines (focused on computability).
+        \item $\mathbb{P}$, $\mathbb{NP}$, $\mathsf{ACC}^0$ not defined in Mathlib at the time.
+      \end{itemize}
+    \item Had to build the foundations first.
+  \end{itemize}
+
+  \bigskip
+  \begin{center}
+    \Large On to work!
+  \end{center}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Turing Machine}
+  \begin{itemize}
+    \item For computability, the computational model is largely irrelevant.
+    \item For complexity, it is \textbf{not}---especially for space, the Turing machine is essential.
+  \end{itemize}
+
+  \bigskip
+  \textit{Definition of Turing machine.}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{State of the Art}
+  \begin{itemize}
+    \item Generally seen as very difficult to formalize.
+    \item 2021: Gähner and Kunze formalize computational complexity in Coq for the first time, down to the machine model.
+    \item Mathlib has Turing machines, but only single-tape and with focus on computability.
+  \end{itemize}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Challenges: Why Is It So Hard?}
+  \begin{itemize}
+    \item Many hand-wavy arguments in standard textbooks.
+    \item Frequent informal estimations that are hard to make rigorous.
+  \end{itemize}
+
+  \bigskip
+  \textit{(Give examples from books.)}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Current Progress}
+  Formalized in \texttt{github.com/crei/cslib}
+
+  \medskip
+  \textbf{Exploratory approach:}
+  \begin{itemize}
+    \item Why not just compose functions?
+      \begin{itemize}
+        \item We don't want resource bounds tied only to input size.
+        \item We want to avoid serialization/deserialization overhead.
+      \end{itemize}
+    \item \textit{(Probably good to give some examples.)}
+  \end{itemize}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Future Ideas}
+  \textit{(To be filled in.)}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Resources}
+  \begin{itemize}
+    \item \url{https://github.com/uds-psl/coq-library-complexity}
+    \item \url{https://github.com/uds-psl/cook-levin}
+    \item \small\url{https://drops.dagstuhl.de/storage/00lipics/lipics-vol193-itp2021/LIPIcs.ITP.2021.20/LIPIcs.ITP.2021.20.pdf}
+    \item \url{https://www.ps.uni-saarland.de/Publications/details/ForsterEtAl:2019:VerifiedTMs.html}
+  \end{itemize}
+\end{frame}
+
+\end{document}
