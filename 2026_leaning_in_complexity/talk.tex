@@ -209,13 +209,15 @@
 \begin{frame}[fragile]{TM DSL}
   The DSL evaluates to regular Turing machines but operates on lists of words instead of tapes.
 
+  Similar to WHILE / LOOP programs, but with stacks instead of registers.
+
   \begin{block}{Example: isZero machine}
   \begin{lstlisting}
     def isZero (i : Fin k) : MultiTapeTM k Symbol :=
       ite i (pop i ; push i []) (pop i ; push i [1])
 
     theorem isZero_eval_list {i : Fin k}
-      {tapes : Fin k -> List (List OneTwo)} :
+      {tapes : Fin k -> List (List Symbol)} :
       (isZero i).eval_list tapes = .some (
         Function.update tapes i (
          (if (tapes i).headD [] = [] then
