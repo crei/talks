@@ -1,8 +1,14 @@
 \documentclass{beamer}
 
 \usetheme{default}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage{amsmath, amssymb}
 \usepackage{hyperref}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small, columns=flexible}
+\usepackage{tikz}
+\usetikzlibrary{positioning, fit, arrows.meta}
 
 \title{Formalizing Complexity Theory}
 \author{Christian Reitwiessner}
@@ -65,33 +71,26 @@
 \end{frame}
 
 % -------------------------------------------------------
-\begin{frame}{Williams' Result}
-  \textbf{Ryan Williams (2011):} $\mathsf{NEXP} \not\subseteq \mathsf{ACC}^0$
-
-  \medskip
+\begin{frame}{Space-efficient computations}
   \begin{itemize}
-    \item $\mathsf{ACC}^0$: circuits of constant depth with AND/OR/MOD gates --- a weak model.
-    \item First \emph{superpolynomial} circuit lower bound for a class above $\mathsf{NP}$ in 20 years.
-    \item Key idea: a \emph{faster SAT algorithm} for $\mathsf{ACC}^0$ circuits implies the lower bound.\\
-          (Algorithmic Method: algorithms $\Rightarrow$ lower bounds.)
-    \item Breaks the natural-proofs barrier by exploiting non-uniformity carefully.
+  \item Obvious: $\mathsf{DTIME}(T) \subseteq \mathsf{DSPACE}(T)$
+  \item Hopcroft--Paul--Valiant (1975): $\subseteq \mathsf{DSPACE}(T / \log T)$
+  \item \textbf{Ryan Williams (2025):} $\subseteq \mathsf{DSPACE}\!\left(\sqrt{T}\cdot\mathrm{polylog}(T)\right)$
+  \item Key ingredient: encode many values in the same memory cells using polynomials over finite fields
+    and erase anything that is possible to re-compute in the future (Cook-Mertz 2023).
   \end{itemize}
 
-  \medskip
-  \textbf{Why exciting:} opens a new proof strategy; perhaps eventually applicable closer to $\mathbb{P}$ vs.\ $\mathbb{NP}$.
 \end{frame}
 
 % -------------------------------------------------------
-\begin{frame}{Motivation: Formalizing in Lean}
+\begin{frame}{Personal Perspective}
   \begin{itemize}
-    \item Learnt about Williams' result and Lean 4 / Mathlib at the same time.
-    \item Idea: formalize the result before someone else does!
+    \item I learnt about Williams' result and Lean roughly at the same time.
+    \item Let's formalize the result before someone else does!
+    \item I had no idea.
     \item First obstacle: cannot even \emph{state} the theorem.
-      \begin{itemize}
-        \item Mathlib only has single-tape Turing machines (focused on computability).
-        \item $\mathbb{P}$, $\mathbb{NP}$, $\mathsf{ACC}^0$ not defined in Mathlib at the time.
-      \end{itemize}
-    \item Had to build the foundations first.
+    \item Complexity theory is not formalized at all in Mathlib / Cslib
+    \item Before Gäher-Kunze-2021, complexity theory was not formalized (down to the machine model) in any proof assistant.
   \end{itemize}
 
   \bigskip
@@ -104,18 +103,75 @@
 \begin{frame}{Turing Machine}
   \begin{itemize}
     \item For computability, the computational model is largely irrelevant.
-    \item For complexity, it is \textbf{not}---especially for space, the Turing machine is essential.
+    \item For complexity, it is \textbf{not}---especially for space complexity.
+    \item Williams' result is only known for Turing machines (local computation), and not for RAMs or other models.
+    \item It gets tricky below linear space, but logarithmic space is one of the most important classes.
   \end{itemize}
 
-  \bigskip
-  \textit{Definition of Turing machine.}
+
+  \begin{center}
+  \begin{tikzpicture}[
+      cell/.style={draw, minimum width=6mm, minimum height=6mm, font=\ttfamily\small},
+      % half-open on left (right end — tape extends right)
+      halfopen-r/.style={minimum width=5mm, minimum height=6mm, font=\small,
+        path picture={
+          \draw (path picture bounding box.north west) -- (path picture bounding box.north east);
+          \draw (path picture bounding box.south west) -- (path picture bounding box.south east);
+          \draw (path picture bounding box.north west) -- (path picture bounding box.south west);
+        }},
+      % half-open on right (left end — tape extends left)
+      halfopen-l/.style={minimum width=5mm, minimum height=6mm, font=\small,
+        path picture={
+          \draw (path picture bounding box.north west) -- (path picture bounding box.north east);
+          \draw (path picture bounding box.south west) -- (path picture bounding box.south east);
+          \draw (path picture bounding box.north east) -- (path picture bounding box.south east);
+        }},
+      head/.style={-{Stealth}, thick},
+      tape label/.style={font=\small\itshape, anchor=east},
+      scale=0.82, transform shape
+    ]
+
+    % --- finite control box ---
+    \node[draw, rounded corners, minimum width=18mm, minimum height=10mm,
+          fill=blue!15, font=\small] (ctrl) {state $q$};
+
+    % ---- tape 1 (input) ----
+    \foreach \i/\c in {0/a, 1/b, 2/\#, 3/b, 4/a} {
+      \node[cell] (t1\i) at (\i*6mm - 12mm, -1.4cm) {\c};
+    }
+    \node[halfopen-l, anchor=east] at (t10.west) {$\cdots$};
+    \node[halfopen-r, anchor=west] at (t14.east) {$\cdots$};
+    \node[tape label] at (-24mm, -1.4cm) {tape 1:};
+    \draw[head, bend right=5] (ctrl.south) to (t12.north);
+
+    % ---- tape 2 (work) ----
+    \foreach \i/\c in {0/0, 1/1, 2/1, 3/0, 4/\textvisiblespace} {
+      \node[cell] (t2\i) at (\i*6mm - 12mm, -2.8cm) {\c};
+    }
+    \node[halfopen-l, anchor=east] at (t20.west) {$\cdots$};
+    \node[halfopen-r, anchor=west] at (t24.east) {$\cdots$};
+    \node[tape label] at (-24mm, -2.8cm) {tape 2:};
+    \draw[head, bend right=15] (ctrl.south) to (t21.north);
+
+    % ---- tape 3 (output) ----
+    \foreach \i/\c in {0/1, 1/\textvisiblespace, 2/\textvisiblespace, 3/\textvisiblespace, 4/\textvisiblespace} {
+      \node[cell] (t3\i) at (\i*6mm - 12mm, -4.2cm) {\c};
+    }
+    \node[halfopen-l, anchor=east] at (t30.west) {$\cdots$};
+    \node[halfopen-r, anchor=west] at (t34.east) {$\cdots$};
+    \node[tape label] at (-24mm, -4.2cm) {tape 3:};
+    \draw[head, bend right=25] (ctrl.south) to (t30.north);
+
+  \end{tikzpicture}
+  \end{center}
 \end{frame}
 
 % -------------------------------------------------------
 \begin{frame}{State of the Art}
   \begin{itemize}
-    \item Generally seen as very difficult to formalize.
-    \item 2021: Gähner and Kunze formalize computational complexity in Coq for the first time, down to the machine model.
+    \item Generally seen as very difficult to formalize, several discussions in Zulip.
+    \item Gäher and Kunze (2021) formalize computational complexity using Turing machines in Coq for the first time, down to the machine model.
+    \item Their approach to use weak call-by-value $\lambda$-calculus does not work for logarithmic space.
     \item Mathlib has Turing machines, but only single-tape and with focus on computability.
   \end{itemize}
 \end{frame}
@@ -124,42 +180,71 @@
 \begin{frame}{Challenges: Why Is It So Hard?}
   \begin{itemize}
     \item Many hand-wavy arguments in standard textbooks.
+    \item Turing machines specified in prose.
     \item Frequent informal estimations that are hard to make rigorous.
   \end{itemize}
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{sipser.png} 
+  \end{center}
 
-  \bigskip
-  \textit{(Give examples from books.)}
 \end{frame}
 
 % -------------------------------------------------------
 \begin{frame}{Current Progress}
-  Formalized in \texttt{github.com/crei/cslib}
+  Formalized in \texttt{https://github.com/crei/cslib} on top of Cslib.
 
   \medskip
-  \textbf{Exploratory approach:}
   \begin{itemize}
-    \item Why not just compose functions?
-      \begin{itemize}
-        \item We don't want resource bounds tied only to input size.
-        \item We want to avoid serialization/deserialization overhead.
-      \end{itemize}
-    \item \textit{(Probably good to give some examples.)}
+  \item Exploratory approach:
+    \begin{itemize}
+      \item \texttt{sorry} proofs for the "obvious" but technically difficult parts
+      \item try to have good \texttt{simp} and \texttt{grind} proofs for composition results
+    \end{itemize}
+    \item Elementary Turing machines and combinator tools.
+    \item Currently trying to prove Savitch's Theorem, $\mathsf{NSPACE}(S) \subseteq \mathsf{DSPACE}(S^2)$,
+      i.e. a space-efficient graph reachability algorithm)
   \end{itemize}
 \end{frame}
 
-% -------------------------------------------------------
-\begin{frame}{Future Ideas}
-  \textit{(To be filled in.)}
+\begin{frame}[fragile]{TM DSL}
+  The DSL evaluates to regular Turing machines but operates on lists of words instead of tapes.
+
+  \begin{block}{Example: isZero machine}
+  \begin{lstlisting}
+    def isZero (i : Fin k) : MultiTapeTM k Symbol :=
+      ite i (pop i ; push i []) (pop i ; push i [1])
+
+    theorem isZero_eval_list {i : Fin k}
+      {tapes : Fin k -> List (List OneTwo)} :
+      (isZero i).eval_list tapes = .some (
+        Function.update tapes i (
+         (if (tapes i).headD [] = [] then
+            [1]
+          else
+            []) :: (tapes i).tail)) := by
+      simp [isZero]; grind
+  \end{lstlisting}
+  \end{block}
 \end{frame}
 
 % -------------------------------------------------------
-\begin{frame}{Resources}
+\begin{frame}{Next Tasks}
   \begin{itemize}
-    \item \url{https://github.com/uds-psl/coq-library-complexity}
-    \item \url{https://github.com/uds-psl/cook-levin}
-    \item \small\url{https://drops.dagstuhl.de/storage/00lipics/lipics-vol193-itp2021/LIPIcs.ITP.2021.20/LIPIcs.ITP.2021.20.pdf}
-    \item \url{https://www.ps.uni-saarland.de/Publications/details/ForsterEtAl:2019:VerifiedTMs.html}
+    \item For sub-linear space, we probably cannot stay with stacks but need to use arrays.
+    \item Loops are not automatic but OK, is there a better way?
+    \item Can we map recursive algorithms to Turing machines?
+    \item Find a good trade-off between precision and usability for space estimation.
   \end{itemize}
 \end{frame}
+
+% % -------------------------------------------------------
+% \begin{frame}{Resources}
+%   \begin{itemize}
+%     \item \url{https://github.com/uds-psl/coq-library-complexity}
+%     \item \url{https://github.com/uds-psl/cook-levin}
+%     \item \small\url{https://drops.dagstuhl.de/storage/00lipics/lipics-vol193-itp2021/LIPIcs.ITP.2021.20/LIPIcs.ITP.2021.20.pdf}
+%     \item \url{https://www.ps.uni-saarland.de/Publications/details/ForsterEtAl:2019:VerifiedTMs.html}
+%   \end{itemize}
+% \end{frame}
 
 \end{document}
