@@ -73,9 +73,9 @@
 % -------------------------------------------------------
 \begin{frame}{Space-efficient computations}
   \begin{itemize}
-  \item Obvious: $\mathsf{DTIME}(T) \subseteq \mathsf{DSPACE}(T)$
-  \item Hopcroft--Paul--Valiant (1975): $\subseteq \mathsf{DSPACE}(T / \log T)$
-  \item \textbf{Ryan Williams (2025):} $\subseteq \mathsf{DSPACE}\!\left(\sqrt{T}\cdot\mathrm{polylog}(T)\right)$
+  \item<1-> Obvious: $\mathsf{DTIME}(T) \subseteq \mathsf{DSPACE}(T)$
+  \item<2-> Hopcroft--Paul--Valiant (1975): $\subseteq \mathsf{DSPACE}(T / \log T)$
+  \item<3-> Ryan Williams (2025): $\subseteq \mathsf{DSPACE}\!\left(\sqrt{T}\cdot\mathrm{polylog}(T)\right)$
   \end{itemize}
 
 \end{frame}
@@ -83,18 +83,29 @@
 % -------------------------------------------------------
 \begin{frame}{Personal Perspective}
   \begin{itemize}
-    \item I learnt about Williams' result and Lean roughly at the same time.
-    \item Let's formalize the result before someone else does!
-    \item I had no idea.
-    \item First obstacle: cannot even \emph{state} the theorem.
-    \item Complexity theory is not formalized at all in Mathlib / Cslib
-    \item Before Gäher-Kunze-2021, complexity theory was not formalized (down to the machine model) in any proof assistant.
+    \item<1-> I learnt about Ryan Williams' result and Lean roughly at the same time.
+    \item<1-> Let's formalize the result before someone else does!
+    \item<2-> I had no idea.
+    \item<3-> First obstacle: cannot even \emph{state} the theorem.
+    \item<3-> Complexity theory is not formalized at all in Mathlib / Cslib
   \end{itemize}
 
   \bigskip
+  \uncover<4->{%
   \begin{center}
     \Large On to work!
   \end{center}
+  }
+\end{frame}
+
+
+% -------------------------------------------------------
+\begin{frame}{State of the Art}
+  \begin{itemize}
+    \item Complexity theory generally seen as very difficult to formalize, several discussions in Zulip.
+    \item Gäher and Kunze (2021) formalize computational complexity using Turing machines in Coq for the first time, down to the machine model.
+    \item Their approach to use weak call-by-value $\lambda$-calculus does not work for logarithmic space.
+  \end{itemize}
 \end{frame}
 
 % -------------------------------------------------------
@@ -165,15 +176,6 @@
 \end{frame}
 
 % -------------------------------------------------------
-\begin{frame}{State of the Art}
-  \begin{itemize}
-    \item Generally seen as very difficult to formalize, several discussions in Zulip.
-    \item Gäher and Kunze (2021) formalize computational complexity using Turing machines in Coq for the first time, down to the machine model.
-    \item Their approach to use weak call-by-value $\lambda$-calculus does not work for logarithmic space.
-  \end{itemize}
-\end{frame}
-
-% -------------------------------------------------------
 \begin{frame}{Challenges: Why Is It So Hard?}
   \begin{itemize}
     \item Many hand-wavy arguments in standard textbooks.
@@ -192,7 +194,7 @@
 
   \medskip
   \begin{itemize}
-  \item Exploratory approach:
+  \item Exploratory approach, focus on getting definitions right:
     \begin{itemize}
       \item \texttt{sorry} proofs for the "obvious" but technically difficult parts
       \item try to have good \texttt{simp} and \texttt{grind} proofs for composition results
@@ -204,7 +206,7 @@
 \end{frame}
 
 \begin{frame}[fragile]{TM DSL}
-  The DSL evaluates to regular Turing machines but operates on lists of words instead of tapes.
+  The DSL evaluates to regular Turing machines but abstracts to stacks of words instead of tapes.
 
   Similar to WHILE / LOOP programs, but with stacks instead of registers.
 
@@ -234,12 +236,12 @@
     \item it is fine to have preconditions on the TM itself (i.e. always halts, etc).
     \item Requiring \texttt{[a, b, c].get.Injective} is much easier to deal with than
        $a \neq b \land b \neq c \land a \neq c$.
-    \item Loops are what is tricky
+    \item run the simp linter!
   \end{itemize}
 \end{frame}
 
 % -------------------------------------------------------
-\begin{frame}{Computations on Structured Data}
+\begin{frame}{Upcoming: Computations on Structured Data}
   \begin{itemize}
     \item For sub-linear space, we probably cannot stay with stacks but need to use arrays / inductive data structures.
     \item TMs on any lean type as long as it can be encoded into:
@@ -252,17 +254,22 @@
 \begin{frame}[fragile]{SAT Verifier}
   \begin{lstlisting}
 def sat :=
+  -- copy assignments to tape 1
   to_arg SatInput 2 0 ;
-    copy Assignment 0 1;
+    copy Assignment 0 1 ;
     out_of_arg SatInput 2 0 ;
     to_arg SatInput 1 0
-  all_list Clause 0 2 -- check that for all clauses on tape 0
-    (any_list Literal 0 2 -- there is some literal
+  -- for all clauses on tape 0 ...
+  all_list Clause 0 2
+    -- there is some literal ...
+    (any_list Literal 0 2
       (case Literal 0
+        -- that is positive and assigned "true", or
         (contains Var 0 1 2)
+        -- negative and assigned "false"
         (contains Var 0 1 2 ; negate 2))) ;
   out_of_arg SatInput 1 0 ;
-  erase Assignment 1 ;
+  erase Assignment 1
 \end{lstlisting}
 \end{frame}
 
