@@ -11,7 +11,7 @@
 \usetikzlibrary{positioning, fit, arrows.meta}
 
 \title{Formalizing Complexity Theory}
-\author{Christian Reitwiessner}
+\author{Christian Reitwiessner\\\vspace{1em}\tiny{chris477@zulip\\crei@github}}
 \institute{leaning in 2026, Berlin}
 \date{2026-03-12}
 
@@ -76,8 +76,6 @@
   \item Obvious: $\mathsf{DTIME}(T) \subseteq \mathsf{DSPACE}(T)$
   \item Hopcroft--Paul--Valiant (1975): $\subseteq \mathsf{DSPACE}(T / \log T)$
   \item \textbf{Ryan Williams (2025):} $\subseteq \mathsf{DSPACE}\!\left(\sqrt{T}\cdot\mathrm{polylog}(T)\right)$
-  \item Key ingredient: encode many values in the same memory cells using polynomials over finite fields
-    and erase anything that is possible to re-compute in the future (Cook-Mertz 2023).
   \end{itemize}
 
 \end{frame}
@@ -172,7 +170,6 @@
     \item Generally seen as very difficult to formalize, several discussions in Zulip.
     \item Gäher and Kunze (2021) formalize computational complexity using Turing machines in Coq for the first time, down to the machine model.
     \item Their approach to use weak call-by-value $\lambda$-calculus does not work for logarithmic space.
-    \item Mathlib has Turing machines, but only single-tape and with focus on computability.
   \end{itemize}
 \end{frame}
 
@@ -230,12 +227,51 @@
 \end{frame}
 
 % -------------------------------------------------------
+\begin{frame}{Lessons Learnt so Far}
+  \begin{itemize}
+    \item Simp lemmas work much better if you avoid assumptions about the tapes:
+      Use \texttt{tm.eval tapes = ...} and use conditionals on the rhs.
+    \item it is fine to have preconditions on the TM itself (i.e. always halts, etc).
+    \item Requiring \texttt{[a, b, c].get.Injective} is much easier to deal with than
+       $a \neq b \land b \neq c \land a \neq c$.
+    \item Loops are what is tricky
+  \end{itemize}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Computations on Structured Data}
+  \begin{itemize}
+    \item For sub-linear space, we probably cannot stay with stacks but need to use arrays / inductive data structures.
+    \item TMs on any lean type as long as it can be encoded into:
+    \item \texttt{inductive Data where\\ | num : Nat -> Data\\ | list : List Data -> Data}
+    \item Tapes are encodings of \texttt{Data}, tape head is \texttt{List Nat}, representing which branch was taken into the data structure
+    \item Example: \texttt{((1)(2)((1)(2)))}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{SAT Verifier}
+  \begin{lstlisting}
+def sat :=
+  to_arg SatInput 2 0 ;
+    copy Assignment 0 1;
+    out_of_arg SatInput 2 0 ;
+    to_arg SatInput 1 0
+  all_list Clause 0 2 -- check that for all clauses on tape 0
+    (any_list Literal 0 2 -- there is some literal
+      (case Literal 0
+        (contains Var 0 1 2)
+        (contains Var 0 1 2 ; negate 2))) ;
+  out_of_arg SatInput 1 0 ;
+  erase Assignment 1 ;
+\end{lstlisting}
+\end{frame}
+
+% -------------------------------------------------------
 \begin{frame}{Next Tasks}
   \begin{itemize}
-    \item For sub-linear space, we probably cannot stay with stacks but need to use arrays.
-    \item Loops are not automatic but OK, is there a better way?
     \item Can we map recursive algorithms to Turing machines?
     \item Find a good trade-off between precision and usability for space estimation.
+    \item Create a working group inside Cslib? Many interested people (Bolton Bailey, Samuel Schlesinger,  Shreyas Srinivas, ...)
   \end{itemize}
 \end{frame}
 
